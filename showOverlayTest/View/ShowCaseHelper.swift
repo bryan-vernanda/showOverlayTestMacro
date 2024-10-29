@@ -30,7 +30,7 @@ struct ShowCaseRoot: ViewModifier {
     @State private var currentHightlight: Int = 0
     @State private var showView: Bool = true
     /// popover
-    @State private var showTitle: Bool = false
+    @State private var showTitle: Bool = true
     /// Namespace ID, for smooth shape transitions
     @Namespace private var animation
     func body(content: Content) -> some View {
@@ -42,24 +42,6 @@ struct ShowCaseRoot: ViewModifier {
                 if highlightOrder.indices.contains(currentHightlight), showHighlights, showView {
                     if let highlight = preferences[highlightOrder[currentHightlight]] {
                         HighlightView(highlight)
-                    }
-                }
-            }
-            .onChange(of: showTitle) { _, newValue in
-                if !newValue {
-                    if currentHightlight >= highlightOrder.count - 1 {
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            showView = false
-                        }
-                        onFinished()
-                    } else {
-                        withAnimation(.interactiveSpring(response: 0.3, dampingFraction: 0.7, blendDuration: 0.7)) {
-                            currentHightlight += 1
-                        }
-                        
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                            showTitle = true
-                        }
                     }
                 }
             }
@@ -82,8 +64,23 @@ struct ShowCaseRoot: ViewModifier {
                          .offset(x: highlightRect.minX - 2.5, y: highlightRect.minY + safeArea.top - 2.5)
                  }
                  .ignoresSafeArea()
-                 .onAppear {
-                     showTitle = true
+                 .onChange(of: showTitle) { _, newValue in
+                     if !newValue {
+                         if currentHightlight >= highlightOrder.count - 1 {
+                             withAnimation(.easeInOut(duration: 0.25)) {
+                                 showView = false
+                             }
+                             onFinished()
+                         } else {
+                             withAnimation(.interactiveSpring(response: 0.3, dampingFraction: 0.7, blendDuration: 0.7)) {
+                                 currentHightlight += 1
+                             }
+                             
+                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                                 showTitle = true
+                             }
+                         }
+                     }
                  }
              
              Rectangle()
