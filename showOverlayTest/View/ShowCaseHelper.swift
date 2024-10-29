@@ -10,11 +10,11 @@ import SwiftUI
 /// custom show case view extension
 extension View {
     @ViewBuilder
-    func showCase(order: Int, title: String, cornerRadius: CGFloat, style: RoundedCornerStyle, scale: CGFloat = 1) -> some View {
+    func showCase(order: Int, title: String, cornerRadius: CGFloat, style: RoundedCornerStyle, scale: CGFloat = 1, showState: Condition = .hide) -> some View {
         self
         /// storing it in Anchor Preference
             .anchorPreference(key: HighlightAnchorKey.self, value: .bounds) { anchor in
-                let highlight = Highlight(anchor: anchor, title: title, cornerRadius: cornerRadius, style: style, scale: scale)
+                let highlight = Highlight(anchor: anchor, title: title, cornerRadius: cornerRadius, style: style, scale: scale, showState: showState)
                 return [order: highlight]
             }
     }
@@ -23,7 +23,8 @@ extension View {
 /// showcase root view modifier
 struct ShowCaseRoot: ViewModifier {
     var showHighlights: Bool
-    var onFinished: () -> ()
+    var changeShowState: Condition
+    var onFinished: ((Bool) -> Void)
     
     /// View properties
     @State private var highlightOrder: [Int] = []
@@ -32,11 +33,24 @@ struct ShowCaseRoot: ViewModifier {
     /// popover
     @State private var showTitle: Bool = true
     /// Namespace ID, for smooth shape transitions
+    
     @Namespace private var animation
     func body(content: Content) -> some View {
         content
             .onPreferenceChange(HighlightAnchorKey.self) { value in
-                highlightOrder = Array(value.keys).sorted()
+                // Filter highlights based on the current show state condition
+                highlightOrder = value
+                    .filter { $0.value.showState == changeShowState }
+                    .map { $0.key }
+                    .sorted()
+            }
+            .onChange(of: changeShowState) { _, newValue in
+                // Reset showcase state when `changeShowState` updates
+                if newValue == .show {
+                    currentHightlight = 0
+                    showView = true
+                    showTitle = true
+                }
             }
             .overlayPreferenceValue(HighlightAnchorKey.self) { preferences in
                 if highlightOrder.indices.contains(currentHightlight), showHighlights, showView {
@@ -70,7 +84,7 @@ struct ShowCaseRoot: ViewModifier {
                              withAnimation(.easeInOut(duration: 0.25)) {
                                  showView = false
                              }
-                             onFinished()
+                             onFinished(true)
                          } else {
                              withAnimation(.interactiveSpring(response: 0.3, dampingFraction: 0.7, blendDuration: 0.7)) {
                                  currentHightlight += 1

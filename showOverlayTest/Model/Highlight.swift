@@ -15,5 +15,6 @@ struct Highlight: Identifiable, Equatable, Hashable {
     var cornerRadius: CGFloat
     var style: RoundedCornerStyle = .continuous
     var scale: CGFloat = 1
+    let showState: Condition
 }
 
